@@ -387,17 +387,19 @@ class Aligner(object):
                 mfc = os.path.join(self.aud_dir, head + '.mfc')
                 w = wave.open(wav, 'r')
                 pids = []  # pids
+                call_lists = [] # commands for each pid
                 if (w.getframerate() != self.sr) or (w.getnchannels() > 1):
                     new_wav = os.path.join(self.aud_dir, head + '.wav')
-                    pids.append(Popen(['sox', '-G', wav, '-b', '16',
-                                       new_wav, 'remix', '-',
-                                       'rate', str(self.sr),
-                                       'dither', '-s'], stderr=PIPE))
+                    call_list = ['sox', '-G', wav, '-b', '16', new_wav,
+                                 'remix', '-', 'rate', str(self.sr),
+                                 'dither', '-s']
+                    pids.append(Popen(call_list, stderr=PIPE))
+                    call_lists.append(call_list)
                     wav = new_wav
-                for pid in pids:  # do a join
+                for pid, call_list in zip(pids, call_lists): # do a join
                     retcode = pid.wait()
                     if retcode != 0:
-                        raise CalledProcessError(retcode, 'sox')
+                        raise CalledProcessError(retcode, " ".join(call_list))
                 print >> copy_scp, '"{0}" "{1}"'.format(wav, mfc)
                 print >> check_scp, '"{0}"'.format(mfc)
                 w.close()
